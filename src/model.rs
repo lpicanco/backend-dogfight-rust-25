@@ -21,6 +21,8 @@ pub struct HealthCheck {
     pub failing: bool,
     #[serde(rename = "minResponseTime")]
     pub min_response_time: u32,
+    #[serde(default)]
+    pub failure_start_time: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
