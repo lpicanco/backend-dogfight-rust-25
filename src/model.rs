@@ -1,18 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-pub const PAYMENT_QUEUE: &str = "payment_queue";
 pub const REDIS_KEY_PAYMENT_DEFAULT: &str = "payments_default";
 pub const REDIS_KEY_PAYMENT_FALLBACK: &str = "payments_fallback";
-fn default_requested_at() -> String {
-    chrono::Utc::now().to_rfc3339()
-}
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize)]
 pub struct Payment {
     #[serde(rename = "correlationId")]
     pub correlation_id: String,
     pub amount: f64,
-    #[serde(default = "default_requested_at", rename = "requestedAt")]
+    #[serde(default, rename = "requestedAt")]
     pub requested_at: String,
 }
 
@@ -51,6 +47,8 @@ pub struct App {
     pub redis_pool: deadpool_redis::Pool,
     pub payment_endpoint: String,
     pub payment_fallback_endpoint: String,
+    pub channel_tx: async_channel::Sender<Payment>,
+    pub channel_rx: async_channel::Receiver<Payment>,
 }
 
 impl App {
@@ -59,11 +57,14 @@ impl App {
         payment_endpoint: String,
         payment_fallback_endpoint: String,
     ) -> Self {
+        let (tx,rx) = async_channel::unbounded();
         App {
             http_client: reqwest::Client::new(),
             redis_pool,
             payment_endpoint,
             payment_fallback_endpoint,
+            channel_tx: tx,
+            channel_rx: rx,
         }
     }
 }
